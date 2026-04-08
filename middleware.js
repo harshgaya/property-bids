@@ -1,62 +1,92 @@
-import { NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
+import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
-const SECRET = () => new TextEncoder().encode(process.env.JWT_SECRET || 'change-this-in-production')
-const PROTECTED_PAGES = ['/post-property', '/dashboard']
+const SECRET = () =>
+  new TextEncoder().encode(
+    process.env.JWT_SECRET || "change-this-in-production",
+  );
+
+const PROTECTED_PAGES = ["/post-property", "/dashboard"];
+const PROTECTED_APIS = [
+  "/api/properties/:path*",
+  "/api/bids",
+  "/api/dashboard",
+];
 
 async function verifyToken(token) {
   try {
-    const { payload } = await jwtVerify(token, SECRET())
-    return payload
-  } catch { return null }
+    const { payload } = await jwtVerify(token, SECRET());
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function withUser(request, payload) {
+  const headers = new Headers(request.headers);
+  headers.set("x-user-id", payload.userId);
+  headers.set("x-user-phone", payload.phone);
+  headers.set("x-user-role", payload.role);
+  return NextResponse.next({ request: { headers } });
 }
 
 export async function middleware(request) {
-  const { pathname } = request.nextUrl
-  const token = request.cookies.get('pb_token')?.value
+  const { pathname } = request.nextUrl;
+  const method = request.method;
+  const token = request.cookies.get("pb_token")?.value;
 
-  const isProtected = PROTECTED_PAGES.some(p => pathname.startsWith(p))
-  if (isProtected) {
+  // ── Protected pages ───────────────────────────────────────────────────────
+  if (PROTECTED_PAGES.some((p) => pathname.startsWith(p))) {
     if (!token) {
-      const url = new URL('/login', request.url)
-      url.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(url)
+      const url = new URL("/login", request.url);
+      url.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(url);
     }
-    const payload = await verifyToken(token)
+    const payload = await verifyToken(token);
     if (!payload) {
-      const url = new URL('/login', request.url)
-      const res = NextResponse.redirect(url)
-      res.cookies.set('pb_token', '', { maxAge: 0, path: '/' })
-      return res
+      const url = new URL("/login", request.url);
+      const res = NextResponse.redirect(url);
+      res.cookies.set("pb_token", "", { maxAge: 0, path: "/" });
+      return res;
     }
-    const headers = new Headers(request.headers)
-    headers.set('x-user-id',    payload.userId)
-    headers.set('x-user-phone', payload.phone)
-    headers.set('x-user-role',  payload.role)
-    return NextResponse.next({ request: { headers } })
+    return withUser(request, payload);
   }
 
-  if (pathname.startsWith('/api/properties') && request.method === 'POST') {
-    if (!token) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 })
-    const payload = await verifyToken(token)
-    if (!payload) return NextResponse.json({ success: false, message: 'Invalid session' }, { status: 401 })
-    const headers = new Headers(request.headers)
-    headers.set('x-user-id', payload.userId)
-    return NextResponse.next({ request: { headers } })
+  // ── Protected APIs (POST only) ────────────────────────────────────────────
+  // Dashboard needs auth on GET too
+  const isDashboardAPI = pathname.startsWith("/api/dashboard");
+  const isPropertyPatch =
+    method === "PATCH" && pathname.startsWith("/api/properties");
+  const isBidsRoute = pathname.startsWith("/api/bids") && method !== "GET";
+  if (
+    (method === "POST" && PROTECTED_APIS.some((p) => pathname.startsWith(p))) ||
+    isDashboardAPI ||
+    isPropertyPatch ||
+    isBidsRoute
+  ) {
+    if (!token)
+      return NextResponse.json(
+        { success: false, message: "Authentication required" },
+        { status: 401 },
+      );
+    const payload = await verifyToken(token);
+    if (!payload)
+      return NextResponse.json(
+        { success: false, message: "Invalid session" },
+        { status: 401 },
+      );
+    return withUser(request, payload);
   }
 
-  if (pathname.startsWith('/api/bids') && request.method === 'POST') {
-    if (!token) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 })
-    const payload = await verifyToken(token)
-    if (!payload) return NextResponse.json({ success: false, message: 'Invalid session' }, { status: 401 })
-    const headers = new Headers(request.headers)
-    headers.set('x-user-id', payload.userId)
-    return NextResponse.next({ request: { headers } })
-  }
-
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/post-property/:path*', '/dashboard/:path*', '/api/properties', '/api/bids'],
-}
+  matcher: [
+    "/post-property/:path*",
+    "/dashboard/:path*",
+    "/api/properties/:path*",
+    "/api/bids/:path*",
+    "/api/dashboard",
+  ],
+};
