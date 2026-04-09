@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ListingPaymentModal from "@/components/property/ListingPaymentModal";
 import {
   RiAddLine,
   RiEyeLine,
@@ -12,10 +13,8 @@ import {
   RiTimeLine,
   RiEdit2Line,
   RiExternalLinkLine,
-  RiShieldCheckLine,
   RiLockLine,
   RiRefreshLine,
-  RiCloseLine,
 } from "react-icons/ri";
 import { TRUST, PLANS } from "@/constants";
 
@@ -34,8 +33,7 @@ function timeAgo(date) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-// ── Unpaid listing banner ─────────────────────────────────────────────────────
-function UnpaidBanner({ plan }) {
+function UnpaidBanner({ plan, onPay }) {
   const p = PLANS.find((pl) => pl.key === plan) || PLANS[0];
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl mt-3">
@@ -48,7 +46,10 @@ function UnpaidBanner({ plan }) {
           Pay {p.priceLabel} for {p.name} to make it live
         </p>
       </div>
-      <button className="px-3 py-1.5 bg-amber-500 text-white text-xs font-bold rounded-xl hover:bg-amber-600 transition-colors flex-shrink-0">
+      <button
+        onClick={onPay}
+        className="px-3 py-1.5 bg-amber-500 text-white text-xs font-bold rounded-xl hover:bg-amber-600 transition-colors flex-shrink-0"
+      >
         Pay Now
       </button>
     </div>
@@ -61,17 +62,42 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [acceptingBid, setAcceptingBid] = useState(null);
+  const [payingProperty, setPayingProperty] = useState(null);
   const router = useRouter();
 
-  async function load() {
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch("/api/dashboard");
+        if (res.status === 401) {
+          router.push("/login?redirect=/dashboard");
+          return;
+        }
+        const json = await res.json();
+        if (!cancelled) {
+          if (!json.success) throw new Error(json.message);
+          setData(json);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function reload() {
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/dashboard");
-      if (res.status === 401) {
-        router.push("/login?redirect=/dashboard");
-        return;
-      }
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
       setData(json);
@@ -82,16 +108,26 @@ export default function DashboardPage() {
     }
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  async function acceptBid(propertyId, bidId) {
+    setAcceptingBid(bidId);
+    try {
+      const res = await fetch(`/api/bids/${bidId}/accept`, { method: "POST" });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      await reload();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAcceptingBid(null);
+    }
+  }
 
   async function rejectBid(bidId) {
     try {
       const res = await fetch(`/api/bids/${bidId}/reject`, { method: "POST" });
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
-      await load();
+      await reload();
     } catch (e) {
       alert(e.message);
     }
@@ -105,27 +141,12 @@ export default function DashboardPage() {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
-      await load();
+      await reload();
     } catch (e) {
       alert(e.message);
     }
   }
 
-  async function acceptBid(propertyId, bidId) {
-    setAcceptingBid(bidId);
-    try {
-      const res = await fetch(`/api/bids/${bidId}/accept`, { method: "POST" });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.message);
-      await load(); // refresh
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setAcceptingBid(null);
-    }
-  }
-
-  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading)
     return (
       <div className="pt-16 min-h-screen bg-gray-50 flex items-center justify-center">
@@ -136,14 +157,13 @@ export default function DashboardPage() {
       </div>
     );
 
-  // ── Error ──────────────────────────────────────────────────────────────────
   if (error)
     return (
       <div className="pt-16 min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 text-sm mb-4">{error}</p>
           <button
-            onClick={load}
+            onClick={reload}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-xl"
           >
             <RiRefreshLine /> Retry
@@ -162,7 +182,6 @@ export default function DashboardPage() {
   return (
     <div className="pt-16 min-h-screen bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-extrabold text-gray-900">
@@ -180,7 +199,6 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
             {
@@ -227,7 +245,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Tabs */}
         <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit flex-wrap">
           {[
             { key: "listings", label: "My Listings" },
@@ -250,7 +267,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* ── My Listings ── */}
+        {/* My Listings */}
         {tab === "listings" && (
           <div className="space-y-4">
             {listings.length === 0 ? (
@@ -278,7 +295,6 @@ export default function DashboardPage() {
                     className="bg-white rounded-2xl border border-gray-200 p-5 hover:border-green-200 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                      {/* Thumbnail */}
                       <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-gray-200 to-gray-300">
                         {l.photos?.[0]?.url && (
                           <img
@@ -288,8 +304,6 @@ export default function DashboardPage() {
                           />
                         )}
                       </div>
-
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <p className="font-bold text-gray-900 truncate">
@@ -333,8 +347,6 @@ export default function DashboardPage() {
                           </span>
                         </div>
                       </div>
-
-                      {/* Actions */}
                       <div className="flex gap-2 flex-shrink-0">
                         <Link
                           href={`/property/${l._id}`}
@@ -350,9 +362,12 @@ export default function DashboardPage() {
                         </Link>
                       </div>
                     </div>
-
-                    {/* Unpaid — show payment prompt */}
-                    {!l.isPaid && <UnpaidBanner plan={l.plan} />}
+                    {!l.isPaid && (
+                      <UnpaidBanner
+                        plan={l.plan}
+                        onPay={() => setPayingProperty(l)}
+                      />
+                    )}
                   </div>
                 );
               })
@@ -360,7 +375,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── Incoming Bids ── */}
+        {/* Incoming Bids */}
         {tab === "incomingBids" && (
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             {incomingBids.length === 0 ? (
@@ -452,7 +467,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── My Placed Bids ── */}
+        {/* My Placed Bids */}
         {tab === "placedBids" && (
           <div className="space-y-3">
             {placedBids.length === 0 ? (
@@ -524,6 +539,17 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {payingProperty && (
+        <ListingPaymentModal
+          property={payingProperty}
+          onClose={() => setPayingProperty(null)}
+          onSuccess={() => {
+            setPayingProperty(null);
+            reload();
+          }}
+        />
+      )}
     </div>
   );
 }

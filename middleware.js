@@ -5,12 +5,15 @@ const SECRET = () =>
   new TextEncoder().encode(
     process.env.JWT_SECRET || "change-this-in-production",
   );
+const ADMIN_SECRET = () =>
+  new TextEncoder().encode(process.env.ADMIN_JWT_SECRET || "admin-secret");
 
 const PROTECTED_PAGES = ["/post-property", "/dashboard"];
 const PROTECTED_APIS = [
-  "/api/properties/:path*",
+  "/api/properties",
   "/api/bids",
   "/api/dashboard",
+  "/api/listing-payment",
 ];
 
 async function verifyToken(token) {
@@ -34,6 +37,22 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const method = request.method;
   const token = request.cookies.get("pb_token")?.value;
+
+  // ── Admin pages ──────────────────────────────────────────────────────────────
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+    const adminToken = request.cookies.get("admin_token")?.value;
+    if (!adminToken) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+    try {
+      await jwtVerify(adminToken, ADMIN_SECRET());
+    } catch {
+      const res = NextResponse.redirect(new URL("/admin/login", request.url));
+      res.cookies.set("admin_token", "", { maxAge: 0, path: "/admin" });
+      return res;
+    }
+    return NextResponse.next();
+  }
 
   // ── Protected pages ───────────────────────────────────────────────────────
   if (PROTECTED_PAGES.some((p) => pathname.startsWith(p))) {
@@ -85,8 +104,11 @@ export const config = {
   matcher: [
     "/post-property/:path*",
     "/dashboard/:path*",
+    "/admin/:path*",
     "/api/properties/:path*",
     "/api/bids/:path*",
     "/api/dashboard",
+    "/api/admin/:path*",
+    "/api/listing-payment/:path*",
   ],
 };

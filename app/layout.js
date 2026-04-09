@@ -1,13 +1,16 @@
-import './globals.css'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
-import { SITE } from '@/constants'
+import "./globals.css";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { SITE } from "@/constants";
 
 export const metadata = {
-  title: { default: `${SITE.name} — ${SITE.tagline}`, template: `%s | ${SITE.name}` },
+  title: {
+    default: `${SITE.name} — ${SITE.tagline}`,
+    template: `%s | ${SITE.name}`,
+  },
   description: SITE.description,
-  keywords: 'real estate India verified GPS no fake listings Hyderabad',
-}
+  keywords: "real estate India verified GPS no fake listings Hyderabad",
+};
 
 export default function RootLayout({ children }) {
   return (
@@ -18,5 +21,5 @@ export default function RootLayout({ children }) {
         <Footer />
       </body>
     </html>
-  )
+  );
 }

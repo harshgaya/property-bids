@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   RiHome4Fill,
   RiMenuLine,
@@ -151,6 +152,7 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -161,6 +163,7 @@ export default function Navbar() {
       .catch(() => {})
       .finally(() => setAuthLoading(false));
   }, []);
+  if (pathname.startsWith("/admin")) return null;
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });

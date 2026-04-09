@@ -7,11 +7,11 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// POST /api/bids/create-order
-// Creates a ₹99 Razorpay order for bid fee
 export async function POST(request) {
   try {
     const userId = request.headers.get("x-user-id");
+    const phone = request.headers.get("x-user-phone") || "";
+
     if (!userId)
       return NextResponse.json(
         { success: false, message: "Login required to place a bid" },
@@ -26,9 +26,9 @@ export async function POST(request) {
       );
 
     const order = await razorpay.orders.create({
-      amount: 9900, // ₹99 in paise
+      amount: 9900,
       currency: "INR",
-      notes: { propertyId, userId },
+      notes: { propertyId, userId, phone },
     });
 
     return NextResponse.json({
