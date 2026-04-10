@@ -185,7 +185,7 @@ export default function Navbar() {
               <RiHome4Fill className="text-white text-base" />
             </div>
             <span className="text-xl font-bold text-gray-900 tracking-tight">
-              Property<span className="text-green-600">Bids</span>
+              MyProperty<span className="text-green-600">Bids</span>
             </span>
           </Link>
 

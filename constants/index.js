@@ -1,9 +1,9 @@
 export const SITE = {
-  name: "PropertyBids",
+  name: "MyPropertyBids",
   fullName: "MyPropertyBids.in",
   tagline: "Direct Sellers. Real Buyers. No Fakes.",
   description:
-    "India's first trust-first real estate marketplace. GPS-verified listings. Live photos. Serious buyers pay ₹99 to bid.",
+    "Direct Sellers. Real Buyers. No Fakes. India’s first trust-first real estate marketplace. Every property GPS-verified. Backed by live photos. Every buyer pays ₹299 to bid. No exceptions. Only serious deals.",
   url: "https://mypropertybids.in",
   email: "hello@mypropertybids.in",
   supportEmail: "support@mypropertybids.in",
