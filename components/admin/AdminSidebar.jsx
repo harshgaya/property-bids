@@ -46,7 +46,7 @@ export default function AdminSidebar() {
           </div>
           <div>
             <p className="text-white font-bold text-sm leading-none">
-              PropertyBids
+              MyPropertyBids
             </p>
             <span className="text-xs bg-green-900 text-green-400 px-1.5 py-0.5 rounded font-semibold mt-0.5 inline-block">
               Admin

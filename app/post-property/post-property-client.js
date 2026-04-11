@@ -69,7 +69,7 @@ async function uploadFile(file, type) {
   return data.url;
 }
 
-export default function PostPropertyClientPage() {
+export default function PostPropertyPage() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     type: "",
@@ -509,7 +509,7 @@ export default function PostPropertyClientPage() {
                   </span>
                 </label>
                 <p className="text-xs text-gray-400 mb-2">
-                  Pin the location to help buyers find it on the map.
+                  Pin the exact location of the property on the map. Required.
                 </p>
                 <GPSPicker
                   value={form.location}

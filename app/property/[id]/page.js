@@ -88,6 +88,17 @@ export default async function PropertyPage({ params: paramsPromise }) {
                 <RiMapPin2Line className="text-green-500 text-sm flex-shrink-0" />
                 <span className="text-sm text-gray-500">{addressFull}</span>
               </div>
+              {p.location?.coordinates && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${p.location.coordinates[1]},${p.location.coordinates[0]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold hover:bg-blue-100 transition-colors mb-2"
+                >
+                  <RiMapPin2Line className="text-base" />
+                  Get Directions — Open in Google Maps
+                </a>
+              )}
               {p.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {p.tags.map((t) => (

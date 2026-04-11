@@ -1,9 +1,7 @@
 "use client";
-
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   RiHome4Fill,
   RiMenuLine,
@@ -155,15 +153,23 @@ export default function Navbar() {
   const pathname = usePathname();
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setUser(d.user);
-      })
-      .catch(() => {})
-      .finally(() => setAuthLoading(false));
-  }, []);
-  if (pathname.startsWith("/admin")) return null;
+    let cancelled = false;
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/me");
+        const data = await res.json();
+        if (!cancelled) setUser(data.success ? data.user : null);
+      } catch {
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setAuthLoading(false);
+      }
+    }
+    checkAuth();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -172,6 +178,7 @@ export default function Navbar() {
     router.refresh();
   }
 
+  if (pathname.startsWith("/admin")) return null;
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

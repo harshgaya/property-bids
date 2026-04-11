@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { RiSearchLine, RiExternalLinkLine } from "react-icons/ri";
 import { TRUST } from "@/constants";
@@ -22,6 +22,7 @@ export default function AdminProperties() {
   const [search, setSearch] = useState("");
   const [trust, setTrust] = useState("");
   const [paid, setPaid] = useState("");
+  const [tick, setTick] = useState(0); // increment to force reload
 
   useEffect(() => {
     let cancelled = false;
@@ -47,15 +48,19 @@ export default function AdminProperties() {
     return () => {
       cancelled = true;
     };
-  }, [page, search, trust, paid]);
+  }, [page, search, trust, paid, tick]);
 
   async function patch(id, update) {
+    // Optimistically update UI
+    setData((prev) =>
+      prev.map((r) => (r._id === id ? { ...r, ...update } : r)),
+    );
     await fetch("/api/admin/properties", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, ...update }),
     });
-    load();
+    setTick((t) => t + 1); // trigger reload to confirm
   }
 
   const columns = [
@@ -172,12 +177,8 @@ export default function AdminProperties() {
 
   return (
     <div className="p-8">
-      <AdminPageHeader
-        title="Properties"
-        sub={`All listings on the platform`}
-      />
+      <AdminPageHeader title="Properties" sub="All listings on the platform" />
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 flex-1 max-w-xs">
           <RiSearchLine className="text-gray-400 flex-shrink-0" />

@@ -63,7 +63,7 @@ export default function Footer() {
                 <RiHome4Fill className="text-white text-lg" />
               </div>
               <span className="text-xl font-bold text-white">
-                Property<span className="text-green-500">Bids</span>
+                MyProperty<span className="text-green-500">Bids</span>
               </span>
             </Link>
             <p className="text-sm leading-relaxed text-gray-500 mb-6 max-w-xs">

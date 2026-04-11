@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import {
   RiShieldCheckLine,
@@ -10,7 +9,7 @@ import {
 } from "react-icons/ri";
 
 export default function PropertyGallery({ photos, trust }) {
-  const [lightbox, setLightbox] = useState(null); // index of open photo
+  const [lightbox, setLightbox] = useState(null);
 
   function open(i) {
     setLightbox(i);

@@ -22,7 +22,8 @@ export default function PropertyCard({ property, className = "" }) {
   const photo = property.photos?.find((p) => p?.url)?.url;
 
   return (
-    <div
+    <Link
+      href={`/property/${property._id}`}
       className={`group block bg-white rounded-2xl border border-gray-200 overflow-hidden card-hover ${className}`}
     >
       {/* Image */}
@@ -130,6 +131,6 @@ export default function PropertyCard({ property, className = "" }) {
           </Link>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
